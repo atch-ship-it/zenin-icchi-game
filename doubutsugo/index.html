@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4aa36c">
+<title>どうぶつ語ゲーム</title>
+<style>
+  :root{
+    --bg1:#eefaf0;
+    --bg2:#d9f0e2;
+    --ink:#22392c;
+    --ink-sub:#6b8a78;
+    --card:#ffffff;
+    --accent:#4aa36c;
+    --accent-dark:#37805a;
+    --answer:#e2803c;
+    --pass:#8d8378;
+    --pass-dark:#6d645b;
+    --shadow:0 4px 0 rgba(0,0,0,.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    color:var(--ink);
+    background:linear-gradient(160deg,var(--bg1) 0%,var(--bg2) 100%);
+    overflow:hidden;touch-action:manipulation;-webkit-text-size-adjust:100%;
+  }
+  #app{
+    height:100vh;height:100dvh;display:flex;flex-direction:column;
+    padding:0 16px calc(14px + env(safe-area-inset-bottom)) 16px;
+    max-width:560px;margin:0 auto;
+  }
+  .screen{flex:1;display:flex;flex-direction:column;min-height:0}
+  .hidden{display:none !important}
+
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    width:100%;border:none;border-radius:16px;
+    font-family:inherit;font-weight:800;color:#fff;
+    cursor:pointer;box-shadow:var(--shadow);
+    transition:transform .06s ease, filter .06s ease;
+  }
+  .btn:active{transform:translateY(3px);box-shadow:none;filter:brightness(.95)}
+  .btn-mode{min-height:88px;font-size:1.5rem;background:var(--accent);border-bottom:4px solid #37805a;flex-direction:column;gap:2px}
+  .btn-mode small{font-size:.62em;font-weight:700;opacity:.9}
+  .btn-mode.adv{background:#7b5ea7;border-bottom-color:#5f4785}
+  .btn-next{min-height:76px;font-size:1.45rem;background:var(--accent);border-bottom:4px solid #37805a}
+  .btn-pass{min-height:54px;font-size:1.1rem;background:var(--pass);border-bottom:4px solid var(--pass-dark)}
+  .btn-sub{min-height:60px;font-size:1.15rem;background:#fff;color:var(--ink);border:2px solid var(--ink-sub);box-shadow:none}
+  .btn-sub:active{transform:translateY(2px)}
+
+  /* ---------- スタート ---------- */
+  #home{justify-content:center;align-items:stretch;text-align:center;gap:18px;padding-bottom:10px}
+  .home-title{font-size:clamp(1.9rem,8.5vw,2.6rem);font-weight:900;line-height:1.3}
+  .home-title small{display:block;font-size:.42em;color:var(--accent);margin-bottom:8px;letter-spacing:.12em}
+  .home-lead{
+    background:var(--card);border-radius:18px;padding:16px 16px;
+    font-size:1rem;line-height:1.85;box-shadow:0 3px 12px rgba(0,0,0,.06);text-align:left;
+  }
+  .home-lead b{color:var(--accent)}
+  .home-note{font-size:.82rem;color:var(--ink-sub);line-height:1.7}
+
+  /* ---------- ヘッダー ---------- */
+  .bar{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 0 8px 0}
+  .home-btn{
+    flex:0 0 auto;width:38px;height:38px;border:none;border-radius:12px;
+    background:rgba(255,255,255,.85);color:var(--ink-sub);
+    font-size:1.1rem;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08);
+  }
+  .home-btn:active{transform:translateY(2px)}
+  .status{flex:1;display:flex;justify-content:flex-end;align-items:center;gap:12px;font-weight:800;font-size:1.05rem}
+  .mode-tag{background:var(--accent);color:#fff;border-radius:999px;padding:3px 12px;font-size:.85rem}
+  .mode-tag.adv{background:#7b5ea7}
+
+  /* ---------- 問題 ---------- */
+  .qwrap{flex:1;display:flex;flex-direction:column;justify-content:center;gap:14px;min-height:0;overflow-y:auto;padding:4px 0}
+  .label{font-size:.85rem;font-weight:800;color:var(--ink-sub);letter-spacing:.08em;margin-bottom:6px}
+  .panel{background:var(--card);border-radius:20px;padding:18px 16px;text-align:center;box-shadow:0 3px 12px rgba(0,0,0,.06)}
+  .genre{font-size:clamp(1.3rem,5.8vw,1.8rem);font-weight:900;line-height:1.5}
+  .animal-name{font-size:clamp(1.6rem,7vw,2.1rem);font-weight:900;color:var(--accent)}
+  .animal-sound{margin-top:4px;font-size:1.05rem;font-weight:700;color:var(--ink-sub)}
+  .answer{font-size:clamp(1.7rem,7.5vw,2.2rem);font-weight:900;color:var(--answer);line-height:1.4}
+  .panel.answer-panel{border:3px dashed var(--answer);background:#fff8f2}
+  .selfmade{font-size:1.15rem;font-weight:800;color:#7b5ea7;line-height:1.6}
+  .actions{display:flex;flex-direction:column;gap:10px;padding-top:8px}
+
+  /* ---------- 終了 ---------- */
+  #end{justify-content:center;align-items:stretch;text-align:center;gap:20px}
+  .end-title{font-size:clamp(1.8rem,8vw,2.4rem);font-weight:900;line-height:1.4}
+  .end-msg{background:var(--card);border-radius:18px;padding:18px 16px;font-size:1.05rem;line-height:1.8;font-weight:700;box-shadow:0 3px 12px rgba(0,0,0,.06)}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ===== スタート画面 ===== -->
+  <section id="home" class="screen">
+    <h1 class="home-title"><small>ANIMAL TALK</small>どうぶつ語ゲーム</h1>
+    <p class="home-lead">
+      親はジャンルを<b>読み上げて</b>、指定された<b>動物の鳴き声だけ</b>で答えを伝える。<br>
+      みんなはそれが何かを当てる。<br>
+      1人5問。終わったら次の人に交代！
+    </p>
+    <button id="beginnerBtn" class="btn btn-mode">初級<small>答えは画面に出ます</small></button>
+    <button id="advancedBtn" class="btn btn-mode adv">上級<small>答えは自分で考えます</small></button>
+    <p class="home-note">言葉・答えの一部・直接のヒントを口に出すのはNG<br>鳴き声の長さ・回数・テンポ・抑揚は自由</p>
+  </section>
+
+  <!-- ===== 問題画面 ===== -->
+  <section id="game" class="screen hidden">
+    <div class="bar">
+      <button id="homeBtn" class="home-btn" aria-label="モード選択へ戻る">⌂</button>
+      <div class="status">
+        <span class="mode-tag" id="modeTag">初級</span>
+        <span id="progress">1 / 5問</span>
+      </div>
+    </div>
+
+    <div class="qwrap">
+      <div class="panel">
+        <div class="label">ジャンル（読み上げる）</div>
+        <div class="genre" id="genre"></div>
+      </div>
+
+      <div class="panel">
+        <div class="label">この動物の鳴き声だけで</div>
+        <div class="animal-name" id="animalName"></div>
+        <div class="animal-sound" id="animalSound"></div>
+      </div>
+
+      <div class="panel answer-panel" id="answerPanel">
+        <div class="label">答え</div>
+        <div class="answer" id="answer"></div>
+      </div>
+
+      <div class="panel hidden" id="selfPanel">
+        <div class="selfmade">答えは自分で考えてください</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="nextBtn" class="btn btn-next">次の問題</button>
+      <button id="passBtn" class="btn btn-pass">パス（別の問題にする）</button>
+    </div>
+  </section>
+
+  <!-- ===== 終了画面 ===== -->
+  <section id="end" class="screen hidden">
+    <div class="end-title">5問終了！<br>次の親に交代！</div>
+    <p class="end-msg">正解した数は<br>各自で数えておいてください</p>
+    <button id="againBtn" class="btn btn-next">次の親スタート</button>
+    <button id="backModeBtn" class="btn btn-sub">モード選択へ戻る</button>
+  </section>
+
+</div>
+
+<script>
+/* =========================================================================
+   データ
+   -------------------------------------------------------------------------
+   ・ANIMALS  : ['動物名', '鳴き声の例']
+   ・BEGINNER : ['ジャンル', '答え']
+   ・ADVANCED : 'ジャンル'
+   追加は該当の配列に1行足すだけ。削除は行ごと消すだけ。
+   ========================================================================= */
+const ANIMALS = [
+  ['ネコ', 'にゃー'],
+  ['イヌ', 'わん'],
+  ['ブタ', 'ぶー'],
+  ['ウマ', 'ひひーん'],
+  ['ウシ', 'もー'],
+  ['ヒツジ', 'めー'],
+  ['ニワトリ', 'こけこっこー'],
+  ['カラス', 'かー'],
+  ['ハト', 'ぽっぽー'],
+  ['カエル', 'げこ'],
+  ['サル', 'うきー']
+];
+
+const BEGINNER = [
+  ['「ま」から始まる楽しいこと', 'まつり'],
+  ['「か」から始まる食べ物', 'カレー'],
+  ['「す」から始まる動物', 'スズメ'],
+  ['「た」から始まる家にあるもの', 'タオル'],
+  ['「お」から始まる、もらったら嬉しいもの', 'おこづかい'],
+  ['「ふ」から始まる食べ物', 'プリン'],
+  ['「は」から始まる乗り物', 'バス'],
+  ['「て」から始まる家電', 'テレビ'],
+  ['「こ」から始まる学校にあるもの', '黒板'],
+  ['「し」から始まるスポーツ', '水泳'],
+  ['「や」から始まる食べ物', '焼きそば'],
+  ['「さ」から始まる動物', 'サル'],
+  ['「き」から始まる食べ物', 'きつねうどん'],
+  ['「と」から始まる丸いもの', '時計'],
+  ['「な」から始まる夏の食べ物', 'なし'],
+  ['「ほ」から始まる家にあるもの', '包丁'],
+  ['「み」から始まる食べ物', 'みかん'],
+  ['「り」から始まる学校にあるもの', '理科室'],
+  ['「せ」から始まる冬に使うもの', 'セーター'],
+  ['「あ」から始まる冷たいもの', 'アイス'],
+  ['夏にしたいこと', '海水浴'],
+  ['冬にしたいこと', '雪合戦'],
+  ['春にしたいこと', '花見'],
+  ['秋にしたいこと', '紅葉狩り'],
+  ['休みの日にしたいこと', '昼寝'],
+  ['旅行に持っていきたいもの', 'カメラ'],
+  ['旅行先で食べたいもの', 'ご当地ラーメン'],
+  ['お祭りでやりたいこと', '金魚すくい'],
+  ['子どもの頃によくした遊び', 'かくれんぼ'],
+  ['学校で楽しみだった行事', '遠足'],
+  ['公園でやりたいこと', 'ブランコ'],
+  ['雨の日に家でしたいこと', '映画を見る'],
+  ['海で見つけたいもの', '貝がら'],
+  ['山で見つけたいもの', 'どんぐり'],
+  ['もらったら嬉しいもの', 'プレゼント'],
+  ['食べると元気が出そうなもの', '焼肉'],
+  ['疲れた日にしたいこと', 'お風呂'],
+  ['朝起きてもう一度したいこと', '二度寝'],
+  ['家にあったら嬉しいもの', '大きなテレビ'],
+  ['100万円あったら買いたいもの', '車'],
+  ['無人島に持っていきたいもの', '水'],
+  ['魔法使いが持っていそうなもの', '魔法の杖'],
+  ['ヒーローが言いそうな言葉', '変身'],
+  ['悪役が言いそうな言葉', '覚えてろ'],
+  ['驚いたときに言いそうな言葉', 'まじで'],
+  ['嬉しいときに言いそうな言葉', 'やったー'],
+  ['電話に出たときに言う言葉', 'もしもし'],
+  ['寝る前に言う言葉', 'おやすみ'],
+  ['朝に言うあいさつ', 'おはよう'],
+  ['感謝するときに言う言葉', 'ありがとう'],
+  ['謝るときに言う言葉', 'ごめんなさい'],
+  ['久しぶりに会った人に言う言葉', '久しぶり'],
+  ['別れるときに言う言葉', 'またね'],
+  ['応援するときに言う言葉', 'がんばれ'],
+  ['お祝いするときに言う言葉', 'おめでとう'],
+  ['お店に入ったとき聞こえそうな言葉', 'いらっしゃいませ'],
+  ['食べる前に言う言葉', 'いただきます'],
+  ['食べ終わったあとに言う言葉', 'ごちそうさま'],
+  ['乾杯するときに言う言葉', 'かんぱい'],
+  ['写真を撮るときに言いそうな言葉', 'はいチーズ'],
+  ['コンビニでつい買いそうなもの', 'おにぎり'],
+  ['スーパーでよく見るもの', '牛乳'],
+  ['冷蔵庫に入っていそうなもの', 'たまご'],
+  ['冷凍庫に入っていそうなもの', 'アイス'],
+  ['台所にあるもの', 'フライパン'],
+  ['お風呂場にあるもの', 'シャンプー'],
+  ['玄関にあるもの', 'くつ'],
+  ['寝室にあるもの', 'まくら'],
+  ['リビングにあるもの', 'ソファ'],
+  ['机の上にありそうなもの', 'ボールペン'],
+  ['かばんに入っていそうなもの', '財布'],
+  ['ポケットに入っていそうなもの', 'ハンカチ'],
+  ['車の中にあるもの', 'シートベルト'],
+  ['駅にあるもの', '改札'],
+  ['学校にあるもの', '黒板'],
+  ['病院にあるもの', '体温計'],
+  ['公園にあるもの', 'すべり台'],
+  ['遊園地にあるもの', '観覧車'],
+  ['海辺にあるもの', '砂浜'],
+  ['山にあるもの', '登山道'],
+  ['丸い食べ物', 'たこ焼き'],
+  ['細長い食べ物', 'フランクフルト'],
+  ['手で食べやすいもの', 'おにぎり'],
+  ['熱々で食べたいもの', 'ラーメン'],
+  ['冷たいまま食べたいもの', 'そうめん'],
+  ['外で食べるとおいしそうなもの', 'お弁当'],
+  ['映画館で食べたいもの', 'ポップコーン'],
+  ['お祭りで食べたいもの', '焼きそば'],
+  ['冬に食べたいもの', 'おでん'],
+  ['夏に食べたいもの', 'かき氷'],
+  ['夜食に食べたいもの', 'ラーメン'],
+  ['朝ごはんに食べたいもの', '目玉焼き'],
+  ['パン屋で買いたいもの', 'メロンパン'],
+  ['喫茶店で頼みたいもの', 'ナポリタン'],
+  ['ファミレスで頼みたいもの', 'ハンバーグ'],
+  ['居酒屋で頼みたいもの', '唐揚げ'],
+  ['お寿司屋さんで食べたいもの', 'まぐろ'],
+  ['焼肉屋で最初に頼みたいもの', 'タン塩'],
+  ['カレーに乗せたいもの', 'とんかつ'],
+  ['ラーメンに乗せたいもの', 'チャーシュー'],
+  ['おにぎりの具にしたいもの', 'ツナマヨ'],
+  ['春に食べたいもの', 'いちご'],
+  ['秋に食べたいもの', '焼き芋'],
+  ['クリスマスに食べたいもの', 'ケーキ'],
+  ['誕生日に食べたいもの', 'ケーキ'],
+  ['運動会で食べたいもの', 'お弁当'],
+  ['遠足に持っていきたいお菓子', 'チョコレート'],
+  ['夜店で買いたいもの', 'りんご飴'],
+  ['冷蔵庫からなくなると困るもの', '牛乳'],
+  ['ご飯にかけたいもの', 'ふりかけ'],
+  ['トーストに塗りたいもの', 'バター'],
+  ['アイスにかけたいもの', 'チョコソース'],
+  ['動物園で見たい動物', 'パンダ'],
+  ['水族館で見たい生き物', 'イルカ'],
+  ['家で飼ってみたい動物', '犬'],
+  ['大きくて強そうな動物', 'ゴリラ'],
+  ['速そうな動物', 'チーター'],
+  ['のんびりしてそうな動物', 'カピバラ'],
+  ['頭が良さそうな動物', 'イルカ'],
+  ['かわいいと思う動物', 'ペンギン'],
+  ['森にいそうな動物', 'クマ'],
+  ['海にいそうな大きな生き物', 'クジラ'],
+  ['空を飛んでいそうな鳥', 'カモメ'],
+  ['夜に活動していそうな動物', 'フクロウ'],
+  ['昔話に出てきそうな動物', 'キツネ'],
+  ['王様が飼っていそうな動物', 'ライオン'],
+  ['忍者と一緒にいそうな動物', 'カラス'],
+  ['魔法使いの相棒にいそうな動物', '黒猫'],
+  ['宇宙に連れていきたい動物', '犬'],
+  ['無人島で頼りになりそうな動物', '馬'],
+  ['一緒に昼寝したい動物', '猫'],
+  ['一緒に散歩したい動物', '犬'],
+  ['一緒に泳ぎたい動物', 'イルカ'],
+  ['乗ってみたい動物', '馬'],
+  ['スポーツといえば', 'サッカー'],
+  ['ボールを使うスポーツ', 'バスケットボール'],
+  ['テレビで見たいスポーツ', '野球'],
+  ['夏にやりたいスポーツ', '水泳'],
+  ['冬にやりたいスポーツ', 'スキー'],
+  ['みんなでやりたい遊び', 'ボウリング'],
+  ['室内でやりたい遊び', 'ボードゲーム'],
+  ['外でやりたい遊び', 'バドミントン'],
+  ['子どもとやりたい遊び', '鬼ごっこ'],
+  ['雨の日にやりたい遊び', 'テレビゲーム'],
+  ['友達と行きたい場所', 'カラオケ'],
+  ['デートで行きそうな場所', '水族館'],
+  ['家族で行きたい場所', '温泉'],
+  ['一人でのんびりしたい場所', '喫茶店'],
+  ['景色を見に行きたい場所', '展望台'],
+  ['一度は行ってみたい場所', '北海道'],
+  ['夏に行きたい場所', '沖縄'],
+  ['秋に行きたい場所', '京都'],
+  ['冬に行きたい場所', '温泉'],
+  ['写真を撮りたくなる場所', '富士山'],
+  ['東京で見たいもの', '東京スカイツリー'],
+  ['京都で見たいもの', '金閣寺'],
+  ['北海道で食べたいもの', 'ラーメン'],
+  ['沖縄で食べたいもの', 'ゴーヤチャンプルー'],
+  ['海外旅行で行ってみたい国', 'アメリカ'],
+  ['暑そうな国', 'エジプト'],
+  ['寒そうな国', 'ロシア'],
+  ['空を飛ぶ乗り物', '飛行機'],
+  ['海を進む乗り物', '船'],
+  ['速そうな乗り物', '新幹線'],
+  ['二輪の乗り物', '自転車'],
+  ['大人数で乗る乗り物', 'バス'],
+  ['一度乗ってみたい乗り物', 'ヘリコプター'],
+  ['未来にありそうな乗り物', '空飛ぶ車'],
+  ['昔の乗り物', '人力車'],
+  ['子どもが好きそうな乗り物', '消防車'],
+  ['働く乗り物', 'ショベルカー'],
+  ['ドラえもんの道具で欲しいもの', 'どこでもドア'],
+  ['桃太郎の仲間に追加したい動物', 'ゴリラ'],
+  ['昔話の主人公', '桃太郎'],
+  ['昔話に出てくるお姫様', 'かぐや姫'],
+  ['ヒーローといえば', 'ウルトラマン'],
+  ['空を飛ぶヒーロー', 'アンパンマン'],
+  ['黄色いキャラクター', 'ピカチュウ'],
+  ['青いキャラクター', 'ドラえもん'],
+  ['丸いキャラクター', 'アンパンマン'],
+  ['悪役っぽい名前', '魔王'],
+  ['RPGでなりたい職業', '勇者'],
+  ['RPGで仲間にしたい職業', '魔法使い'],
+  ['宝箱に入っていてほしいもの', '金貨'],
+  ['冒険に持っていきたいもの', '地図'],
+  ['ゾンビから逃げるとき持ちたいもの', '懐中電灯'],
+  ['宇宙人に見せたいもの', 'スマートフォン'],
+  ['宇宙に持っていきたい食べ物', 'カレー'],
+  ['透明人間になったら行ってみたい場所', '遊園地'],
+  ['タイムマシンで見てみたい時代', '江戸時代'],
+  ['100年後にもありそうなもの', '自動車'],
+  ['未来の家にありそうなもの', 'ロボット'],
+  ['無人島にあったら嬉しい店', 'コンビニ'],
+  ['世界征服したら作りたいもの', '遊園地'],
+  ['王様になったら住みたい場所', 'お城'],
+  ['ラスボスが住んでいそうな場所', '火山'],
+  ['ゴリラに付けたい名前', 'ゴン太'],
+  ['宇宙人が言いそうな言葉', 'ワレワレハ宇宙人ダ'],
+  ['ロボットが言いそうな言葉', '了解しました'],
+  ['幽霊が出そうな場所', 'お墓']
+];
+
+const ADVANCED = [
+  'あなたが好きな動物',
+  'あなたが好きな食べ物',
+  'あなたが好きな飲み物',
+  'あなたが好きなお菓子',
+  'あなたが好きなくだもの',
+  'あなたが好きな季節',
+  'あなたが好きな色',
+  'あなたが好きな場所',
+  'あなたが好きな乗り物',
+  'あなたが好きなスポーツ',
+  'あなたが好きな麺料理',
+  'あなたが好きな丼もの',
+  'あなたが好きなアイスの味',
+  'あなたが好きなおにぎりの具',
+  'あなたが好きな寿司ネタ',
+  'あなたが今食べたいもの',
+  'あなたが今飲みたいもの',
+  'あなたが今行きたい場所',
+  'あなたが休日にしたいこと',
+  'あなたが旅行で行きたい都道府県',
+  'あなたが海外旅行で行きたい国',
+  'あなたが一度乗ってみたい乗り物',
+  'あなたが飼ってみたい動物',
+  'あなたが生まれ変わるならなりたい動物',
+  'あなたが一日だけやってみたい仕事',
+  'あなたが得意になりたいこと',
+  'あなたが一瞬で覚えたい特技',
+  'あなたが家に欲しいもの',
+  'あなたが100万円もらったら買いたいもの',
+  'あなたが宝くじで1億円当たったら最初にしたいこと',
+  'あなたが無人島に1つ持っていきたいもの',
+  'あなたが一生無料にしたいもの',
+  'あなたが魔法を使えたら最初にしたいこと',
+  'あなたが1つだけ超能力を使えるなら欲しい能力',
+  'あなたがタイムマシンで行きたい時代',
+  'あなたが透明人間になったら最初にしたいこと',
+  'あなたが空を飛べたら最初に行きたい場所',
+  'あなたがドラえもんから1つもらいたい道具',
+  'あなたが昔話の主人公になるなら誰',
+  'あなたがRPGの世界でなりたい職業',
+  'あなたが冒険に連れていきたい動物',
+  'あなたがゾンビから逃げるなら行きたい場所',
+  'あなたが宇宙人に会ったら最初にしたいこと',
+  'あなたが世界征服したら最初に作りたいもの',
+  'あなたが王様になったら住みたい場所',
+  'あなたが一番落ち着く場所',
+  'あなたがテンションの上がる食べ物',
+  'あなたが子どもの頃によくした遊び',
+  'あなたが今もう一度やってみたい遊び',
+  'あなたが明日突然休みになったらしたいこと'
+];
+
+/* =========================================================================
+   ゲーム本体
+   ========================================================================= */
+const TOTAL_Q = 5;
+const $ = (id) => document.getElementById(id);
+
+let state = null;
+
+function startGame(mode) {
+  state = {
+    mode: mode,                 // 'beginner' | 'advanced'
+    step: 0,
+    usedQ: [],                  // この5問で出した問題のindex
+    usedAnimals: [],            // 確定した問題で使った動物のindex
+    current: null
+  };
+  showScreen('game');
+  nextQuestion();
+}
+
+function pool() {
+  return state.mode === 'beginner' ? BEGINNER : ADVANCED;
+}
+
+// 未出題の問題からランダムに1問
+function pickQuestion() {
+  const p = pool();
+  const rest = p.map((_, i) => i).filter(i => !state.usedQ.includes(i));
+  if (rest.length === 0) return null;
+  const idx = rest[Math.floor(Math.random() * rest.length)];
+  state.usedQ.push(idx);
+  return idx;
+}
+
+// 確定済みの問題で使った動物とは重ならないようにランダムに1匹
+function pickAnimal() {
+  const rest = ANIMALS.map((_, i) => i).filter(i => !state.usedAnimals.includes(i));
+  const from = rest.length ? rest : ANIMALS.map((_, i) => i);
+  return from[Math.floor(Math.random() * from.length)];
+}
+
+function nextQuestion() {
+  const q = pickQuestion();
+  if (q === null) { showScreen('end'); return; }  // 問題を出しきった場合（通常は起こらない）
+  state.current = { q: q, animal: pickAnimal() };
+  render();
+}
+
+function render() {
+  const beginner = state.mode === 'beginner';
+  const entry = pool()[state.current.q];
+  const animal = ANIMALS[state.current.animal];
+
+  $('modeTag').textContent = beginner ? '初級' : '上級';
+  $('modeTag').classList.toggle('adv', !beginner);
+  $('progress').textContent = (state.step + 1) + ' / ' + TOTAL_Q + '問';
+
+  $('genre').textContent = beginner ? entry[0] : entry;
+  $('animalName').textContent = animal[0];
+  $('animalSound').textContent = '「' + animal[1] + '」';
+
+  $('answerPanel').classList.toggle('hidden', !beginner);
+  $('selfPanel').classList.toggle('hidden', beginner);
+  if (beginner) $('answer').textContent = entry[1];
+}
+
+// パス：問題数を消費せず、同じモードの未出題の別問題へ差し替える
+function pass() {
+  const q = pickQuestion();
+  if (q === null) { advance(); return; }          // 出しきったときだけ次へ進む
+  state.current = { q: q, animal: pickAnimal() };
+  render();
+}
+
+function advance() {
+  // いま表示している動物を「使用済み」として確定する
+  state.usedAnimals.push(state.current.animal);
+  state.step++;
+  if (state.step >= TOTAL_Q) {
+    showScreen('end');
+  } else {
+    nextQuestion();
+  }
+}
+
+function showScreen(name) {
+  ['home', 'game', 'end'].forEach(s => $(s).classList.toggle('hidden', s !== name));
+}
+
+// ---- イベント ----
+$('beginnerBtn').addEventListener('click', () => startGame('beginner'));
+$('advancedBtn').addEventListener('click', () => startGame('advanced'));
+$('nextBtn').addEventListener('click', advance);
+$('passBtn').addEventListener('click', pass);
+$('homeBtn').addEventListener('click', () => showScreen('home'));
+$('againBtn').addEventListener('click', () => startGame(state.mode));
+$('backModeBtn').addEventListener('click', () => showScreen('home'));
+</script>
+</body>
+</html>
