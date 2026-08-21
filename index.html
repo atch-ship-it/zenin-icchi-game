@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ff8a3d">
+<title>この人ならどっち？ 全員一致ゲーム</title>
+<style>
+  :root{
+    --bg1:#fff3e6;
+    --bg2:#ffe3d0;
+    --ink:#3a2b22;
+    --ink-sub:#8a7466;
+    --card:#ffffff;
+    --accent:#ff8a3d;
+    --ok:#1fa971;
+    --ok-dark:#147d53;
+    --ng:#e8604c;
+    --ng-dark:#c04434;
+    --pass:#8d8378;
+    --pass-dark:#6d645b;
+    --shadow:0 4px 0 rgba(0,0,0,.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    color:var(--ink);
+    background:linear-gradient(160deg,var(--bg1) 0%,var(--bg2) 100%);
+    overflow:hidden;
+    touch-action:manipulation;
+    -webkit-text-size-adjust:100%;
+  }
+  #app{
+    height:100vh;height:100dvh;
+    display:flex;flex-direction:column;
+    padding:0 16px calc(14px + env(safe-area-inset-bottom)) 16px;
+    max-width:560px;margin:0 auto;
+  }
+  .screen{flex:1;display:flex;flex-direction:column;min-height:0}
+  .hidden{display:none !important}
+
+  /* ---------- ボタン共通 ---------- */
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;border:none;border-radius:16px;
+    font-family:inherit;font-weight:800;color:#fff;
+    cursor:pointer;box-shadow:var(--shadow);
+    transition:transform .06s ease, filter .06s ease;
+  }
+  .btn:active{transform:translateY(3px);box-shadow:none;filter:brightness(.95)}
+  .btn-lg{min-height:68px;font-size:1.35rem;letter-spacing:.04em}
+  .btn-start{min-height:80px;font-size:1.6rem;background:var(--accent)}
+  .btn-ok{background:var(--ok);border-bottom:4px solid var(--ok-dark)}
+  .btn-ng{background:var(--ng);border-bottom:4px solid var(--ng-dark)}
+  .btn-pass{background:var(--pass);border-bottom:4px solid var(--pass-dark);min-height:56px;font-size:1.15rem}
+  .btn-next{background:var(--accent);border-bottom:4px solid #d96b24;min-height:72px;font-size:1.4rem}
+  .btn-icon{font-size:1.5em;line-height:1}
+
+  /* ---------- トップ画面 ---------- */
+  #home{justify-content:center;align-items:center;text-align:center;gap:26px;padding-bottom:10px}
+  .home-title{font-size:clamp(1.7rem,7.5vw,2.3rem);font-weight:900;line-height:1.35}
+  .home-title small{display:block;font-size:.62em;color:var(--accent);margin-bottom:6px}
+  .home-lead{
+    background:var(--card);border-radius:18px;padding:20px 18px;
+    font-size:1.05rem;line-height:1.9;box-shadow:0 3px 12px rgba(0,0,0,.07);
+  }
+  .home-lead b{color:var(--accent)}
+  .home-note{font-size:.85rem;color:var(--ink-sub);line-height:1.7}
+
+  /* ---------- ヘッダー ---------- */
+  .bar{
+    display:flex;align-items:center;gap:10px;
+    padding:calc(10px + env(safe-area-inset-top)) 0 10px 0;
+  }
+  .home-btn{
+    flex:0 0 auto;width:38px;height:38px;border:none;border-radius:12px;
+    background:rgba(255,255,255,.85);color:var(--ink-sub);
+    font-size:1.1rem;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08);
+  }
+  .home-btn:active{transform:translateY(2px)}
+  .status{
+    flex:1;display:flex;justify-content:flex-end;align-items:baseline;gap:14px;
+    font-weight:800;font-size:1.05rem;
+  }
+  .status .score{color:var(--accent)}
+
+  /* ---------- 問題エリア ---------- */
+  .qwrap{flex:1;display:flex;flex-direction:column;justify-content:center;gap:18px;min-height:0;overflow-y:auto;padding:6px 0}
+  .qmeta{text-align:center;font-weight:800;color:var(--ink-sub);font-size:.95rem;letter-spacing:.02em}
+  .qmeta .type{
+    display:inline-block;background:var(--accent);color:#fff;
+    border-radius:999px;padding:3px 12px;margin-right:8px;font-size:.9rem;
+  }
+  .qtext{
+    background:var(--card);border-radius:20px;padding:24px 18px;
+    font-size:clamp(1.3rem,5.6vw,1.75rem);font-weight:900;line-height:1.55;
+    text-align:center;box-shadow:0 3px 12px rgba(0,0,0,.07);
+  }
+  .choices{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+  .choice{
+    background:#fff;border:2px solid var(--accent);border-radius:14px;
+    padding:11px 16px;font-size:clamp(1rem,4.4vw,1.25rem);font-weight:800;color:var(--ink);
+  }
+
+  /* ---------- 判定エリア ---------- */
+  .actions{display:flex;flex-direction:column;gap:10px;padding-top:8px}
+  .verdict{
+    text-align:center;background:var(--card);border-radius:18px;padding:18px 14px;
+    box-shadow:0 3px 12px rgba(0,0,0,.07);
+  }
+  .verdict .headline{font-size:1.5rem;font-weight:900;line-height:1.4}
+  .verdict .sub{margin-top:6px;font-size:1.05rem;color:var(--ink-sub);font-weight:700}
+  .verdict.is-ok .headline{color:var(--ok)}
+  .verdict.is-ng .headline{color:var(--ng)}
+  .verdict.is-pass .headline{color:var(--pass)}
+
+  /* ---------- 結果画面 ---------- */
+  #result{justify-content:center;align-items:center;text-align:center;gap:22px}
+  .result-score{font-size:clamp(3.2rem,17vw,4.6rem);font-weight:900;color:var(--accent);line-height:1}
+  .result-score span{font-size:.42em;margin-left:4px}
+  .result-title{font-size:clamp(1.6rem,7vw,2.1rem);font-weight:900}
+  .result-msg{
+    background:var(--card);border-radius:18px;padding:18px 16px;
+    font-size:1.1rem;line-height:1.8;font-weight:700;box-shadow:0 3px 12px rgba(0,0,0,.07);
+  }
+  .result-detail{font-size:.9rem;color:var(--ink-sub);line-height:1.8}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ===== トップ画面 ===== -->
+  <section id="home" class="screen">
+    <h1 class="home-title"><small>この人ならどっち？</small>全員一致ゲーム</h1>
+    <p class="home-lead">
+      親が何を答えるか、<br>みんなで<b>予想しよう！</b><br>
+      1人5問。合計<b>5ポイント以上</b>でクリア！
+    </p>
+    <button id="startBtn" class="btn btn-start">スタート</button>
+    <p class="home-note">答えにくい問題はパスOK<br>理由は言っても言わなくてもOK</p>
+  </section>
+
+  <!-- ===== 問題画面 ===== -->
+  <section id="game" class="screen hidden">
+    <div class="bar">
+      <button id="homeBtn" class="home-btn" aria-label="トップにもどる">⌂</button>
+      <div class="status">
+        <span id="progress">1 / 5問</span>
+        <span class="score" id="score">現在0ポイント</span>
+      </div>
+    </div>
+
+    <div class="qwrap">
+      <p class="qmeta"><span class="type" id="qtype">2択</span><span id="qinfo">第1問 / 成功で1ポイント</span></p>
+      <p class="qtext" id="qtext"></p>
+      <div class="choices" id="qchoices"></div>
+    </div>
+
+    <!-- 判定前 -->
+    <div class="actions" id="judgeArea">
+      <button class="btn btn-lg btn-ok" data-judge="ok"><span class="btn-icon">◎</span>成功</button>
+      <button class="btn btn-lg btn-ng" data-judge="ng"><span class="btn-icon">✕</span>失敗</button>
+      <button class="btn btn-pass" data-judge="pass"><span class="btn-icon">↷</span>パス</button>
+    </div>
+
+    <!-- 判定後 -->
+    <div class="actions hidden" id="nextArea">
+      <div class="verdict" id="verdict">
+        <div class="headline" id="verdictHead"></div>
+        <div class="sub" id="verdictSub"></div>
+      </div>
+      <button id="nextBtn" class="btn btn-next">次の問題へ</button>
+    </div>
+  </section>
+
+  <!-- ===== 結果画面 ===== -->
+  <section id="result" class="screen hidden">
+    <div class="result-score" id="resultScore">0<span>ポイント！</span></div>
+    <div class="result-title" id="resultTitle"></div>
+    <p class="result-msg" id="resultMsg"></p>
+    <p class="result-detail" id="resultDetail"></p>
+    <button id="backHomeBtn" class="btn btn-start">トップにもどる</button>
+  </section>
+
+</div>
+
+<script>
+/* =========================================================================
+   問題データ
+   -------------------------------------------------------------------------
+   ・追加したいときは、該当する配列に1行足すだけ。削除は行ごと消すだけ。
+   ・'2択' と 'フリー' は  '質問文'                     の形式
+   ・'3択'〜'5択' は       ['質問文', '選択肢1', '選択肢2', ...] の形式
+   ========================================================================= */
+const QUESTIONS = {
+
+  '2択': [
+    '犬派？ 猫派？',
+    '海派？ 山派？',
+    '夏派？ 冬派？',
+    '朝型？ 夜型？',
+    'ごはん派？ パン派？',
+    '甘いもの派？ しょっぱいもの派？',
+    'コーヒー派？ 紅茶派？',
+    'うどん派？ そば派？',
+    'ラーメン派？ カレー派？',
+    '焼肉派？ お寿司派？',
+    'アイス派？ ケーキ派？',
+    'チョコ派？ ポテトチップス派？',
+    '和食派？ 洋食派？',
+    '目玉焼きなら醤油？ ソース？',
+    '旅行するなら北海道？ 沖縄？',
+    '旅行するなら国内？ 海外？',
+    '温泉？ 遊園地？',
+    '動物園？ 水族館？',
+    '映画館？ 家で映画？',
+    'インドア？ アウトドア？',
+    '電車旅？ 車旅？',
+    '計画して出かける？ 行き当たりばったり？',
+    '大人数で遊ぶ？ 少人数で遊ぶ？',
+    'にぎやかな場所？ 静かな場所？',
+    '都会？ 田舎？',
+    '晴れの日？ 雨の日？',
+    '桜？ 紅葉？',
+    '海を見る？ 星空を見る？',
+    '朝日を見る？ 夕日を見る？',
+    '本を読む？ 動画を見る？',
+    '映画？ ドラマ？',
+    '漫画？ 小説？',
+    'ゲームする？ スポーツする？',
+    '観戦するなら野球？ サッカー？',
+    'カラオケ？ ボウリング？',
+    '写真を撮る？ 撮られる？',
+    '買い物はお店？ ネット？',
+    '新しいものを試す？ いつものを選ぶ？',
+    'プレゼントはもらう？ あげる？',
+    '休日は予定を入れる？ 何も決めない？',
+    '早めに着く？ ギリギリに着く？',
+    '地図を見て歩く？ 感覚で歩く？',
+    '説明書を読む？ とりあえず触る？',
+    '好きなものは最後に食べる？ 最初に食べる？',
+    'お風呂は長め？ 短め？',
+    '寝るときは真っ暗？ 少し明るい？',
+    'エアコンは涼しめ？ 暖かめ？',
+    '100万円もらったら使う？ 貯める？',
+    'タイムマシンなら過去？ 未来？',
+    '透明人間になる？ 空を飛べる？'
+  ],
+
+  '3択': [
+    ['桃太郎の仲間で、一番強そうなのは？', 'イヌ', 'サル', 'キジ'],
+    ['無人島に連れていくなら？', '犬', '猫', 'ゴリラ'],
+    ['生まれ変わるなら？', '鳥', 'イルカ', '猫'],
+    ['1日だけなれるなら？', '透明人間', '空を飛べる人', '瞬間移動できる人'],
+    ['超能力を持つなら？', '未来予知', 'テレパシー', '念力'],
+    ['タイムマシンで行くなら？', '10年前', '100年前', '100年後'],
+    ['住むなら？', '海の家', '山の家', '都会の高層マンション'],
+    ['旅行に行くなら？', '北海道', '沖縄', '京都'],
+    ['海外に行くなら？', 'ハワイ', 'イタリア', 'オーストラリア'],
+    ['休日を過ごすなら？', '家', 'ショッピングモール', '自然の中'],
+    ['遊びに行くなら？', '水族館', '動物園', '遊園地'],
+    ['見に行くなら？', '花火', 'イルミネーション', '桜'],
+    ['テンションが上がる景色は？', '海', '山', '夜景'],
+    ['泊まるなら？', '高級ホテル', '温泉旅館', 'キャンプ'],
+    ['移動するなら？', '車', '電車', '自転車'],
+    ['今から食べるなら？', '寿司', '焼肉', 'ラーメン'],
+    ['一生食べる主食にするなら？', '米', 'パン', '麺'],
+    ['デザートなら？', 'ケーキ', 'アイス', 'プリン'],
+    ['おやつなら？', 'チョコ', 'ポテチ', 'せんべい'],
+    ['果物なら？', 'いちご', '桃', 'ぶどう'],
+    ['朝ごはんは？', 'ご飯', 'パン', '食べない'],
+    ['カレーに乗せるなら？', 'カツ', 'チーズ', '卵'],
+    ['おにぎりの具なら？', '鮭', '梅', 'ツナマヨ'],
+    ['ラーメンなら？', '醤油', '味噌', '豚骨'],
+    ['寒い日に食べるなら？', '鍋', 'ラーメン', 'おでん'],
+    ['夏に食べるなら？', 'かき氷', 'アイス', 'スイカ'],
+    ['映画を観るなら？', 'コメディ', 'アクション', 'ホラー'],
+    ['テレビを観るなら？', 'ドラマ', 'バラエティ', 'ドキュメンタリー'],
+    ['暇なときは？', 'ゲーム', '動画', '読書'],
+    ['みんなで遊ぶなら？', 'ボウリング', 'カラオケ', 'ボードゲーム'],
+    ['観戦するなら？', '野球', 'サッカー', 'バスケ'],
+    ['自分でやるなら？', '球技', '水泳', 'ランニング'],
+    ['学校の教科なら？', '国語', '数学', '体育'],
+    ['得意になるなら？', '歌', '絵', '料理'],
+    ['楽器をやるなら？', 'ギター', 'ピアノ', 'ドラム'],
+    ['有名人になるなら？', '俳優', '歌手', 'お笑い芸人'],
+    ['YouTubeを始めるなら？', 'ゲーム実況', '料理', '旅行'],
+    ['店を出すなら？', 'ラーメン屋', '喫茶店', 'パン屋'],
+    ['1億円当たったら？', '家', '旅行', '貯金'],
+    ['100万円使うなら？', '旅行', '趣味', '買い物'],
+    ['1年間タダになるなら？', '家賃', '食費', '交通費'],
+    ['ドラえもんの道具をもらうなら？', 'どこでもドア', 'タケコプター', 'ほんやくコンニャク'],
+    ['昔話の主人公になるなら？', '桃太郎', '浦島太郎', '金太郎'],
+    ['RPGで選ぶなら？', '戦士', '魔法使い', '僧侶'],
+    ['ゾンビから逃げるなら？', 'ショッピングモール', '学校', '山奥'],
+    ['怪獣が現れたら？', '逃げる', '隠れる', '見に行く'],
+    ['宇宙人に会ったら？', '話しかける', '写真を撮る', '逃げる'],
+    ['暮らすなら？', '江戸時代', '昭和', '未来'],
+    ['ペットにするなら？', 'パンダ', 'ペンギン', 'カピバラ'],
+    ['ラスボスになったら住むのは？', '城', '火山', '宇宙基地']
+  ],
+
+  '4択': [
+    ['無人島に連れていくなら？', '犬', '猫', '馬', 'ゴリラ'],
+    ['生まれ変わるなら？', '犬', '猫', 'イルカ', '鳥'],
+    ['能力を手に入れるなら？', '透明化', '飛行', '瞬間移動', '時間停止'],
+    ['超能力を持つなら？', '未来予知', '念力', 'テレパシー', '瞬間移動'],
+    ['タイムマシンで行くなら？', '10年前', '100年前', '100年後', '1000年後'],
+    ['住むなら？', '海辺', '山奥', '都会', '田舎町'],
+    ['旅行に行くなら？', '北海道', '沖縄', '京都', '大阪'],
+    ['海外に行くなら？', 'ハワイ', '韓国', 'イタリア', 'オーストラリア'],
+    ['出かけるなら？', '温泉', '遊園地', '水族館', 'ショッピング'],
+    ['絶景を見るなら？', '海', '山', '夜景', '星空'],
+    ['泊まるなら？', '高級ホテル', '温泉旅館', 'キャンプ', '古民家'],
+    ['移動するなら？', '車', '電車', '自転車', '徒歩'],
+    ['一生食べる主食にするなら？', '米', 'パン', '麺', 'じゃがいも'],
+    ['ごちそうなら？', '寿司', '焼肉', '天ぷら', 'うなぎ'],
+    ['麺を食べるなら？', 'ラーメン', 'うどん', 'そば', 'パスタ'],
+    ['デザートなら？', 'ケーキ', 'アイス', 'プリン', '和菓子'],
+    ['お菓子なら？', 'チョコ', 'ポテチ', 'せんべい', 'グミ'],
+    ['果物なら？', 'いちご', '桃', 'ぶどう', 'みかん'],
+    ['朝ごはんは？', 'ご飯', 'パン', '麺', '食べない'],
+    ['カレーに乗せるなら？', 'カツ', 'チーズ', '卵', '唐揚げ'],
+    ['おにぎりの具なら？', '鮭', '梅', '昆布', 'ツナマヨ'],
+    ['ラーメンなら？', '醤油', '味噌', '塩', '豚骨'],
+    ['冬に食べるなら？', '鍋', 'おでん', 'ラーメン', 'シチュー'],
+    ['夏に食べるなら？', 'アイス', 'かき氷', 'スイカ', '冷やし中華'],
+    ['映画を観るなら？', 'コメディ', 'アクション', '恋愛', 'ホラー'],
+    ['暇なときは？', 'ゲーム', '動画', '読書', '昼寝'],
+    ['みんなで遊ぶなら？', 'ボウリング', 'カラオケ', 'ボドゲ', 'BBQ'],
+    ['得意になるなら？', '歌', '絵', '料理', 'スポーツ'],
+    ['楽器をやるなら？', 'ギター', 'ピアノ', 'ドラム', 'サックス'],
+    ['有名人になるなら？', '俳優', '歌手', '芸人', 'スポーツ選手'],
+    ['YouTubeを始めるなら？', 'ゲーム', '料理', '旅行', '動物'],
+    ['店を出すなら？', 'ラーメン屋', '喫茶店', 'パン屋', '居酒屋'],
+    ['1億円当たったら？', '家', '車', '旅行', '貯金'],
+    ['100万円使うなら？', '旅行', '趣味', '家電', '食事'],
+    ['一生タダになるなら？', '家賃', '食費', '交通費', '光熱費'],
+    ['ドラえもんの道具をもらうなら？', 'どこでもドア', 'タケコプター', 'もしもボックス', 'タイムマシン'],
+    ['昔話の主人公になるなら？', '桃太郎', '浦島太郎', '金太郎', '一寸法師'],
+    ['RPGで選ぶなら？', '戦士', '魔法使い', '僧侶', '盗賊'],
+    ['ゾンビから逃げるなら？', '学校', 'スーパー', '山', 'ホテル'],
+    ['怪獣が現れたら？', '逃げる', '隠れる', '撮影する', '戦う'],
+    ['宇宙人に会ったら？', '話す', '逃げる', '写真を撮る', '食べ物をあげる'],
+    ['暮らすなら？', '江戸時代', '昭和30年代', '現在', '100年後'],
+    ['ペットにするなら？', 'パンダ', 'ペンギン', 'カピバラ', 'アルパカ'],
+    ['巨大化させるなら？', '犬', '猫', 'ハムスター', '金魚'],
+    ['ラスボスになったら住むのは？', '城', '火山', '海底', '宇宙基地'],
+    ['世界を救う仲間にするなら？', '侍', '忍者', 'ロボット', '魔法使い'],
+    ['職業体験するなら？', 'パイロット', '料理人', '飼育員', '宇宙飛行士'],
+    ['1年間住むなら？', '北海道', '東京', '沖縄', '無人島'],
+    ['専用の乗り物をもらうなら？', 'スポーツカー', '豪華客船', 'ヘリコプター', '馬'],
+    ['王様になったら作るのは？', '城', '遊園地', '巨大温泉', '巨大食堂']
+  ],
+
+  '5択': [
+    ['桃太郎の一行に新しい仲間を加えるなら？', 'ネコ', 'クマ', 'ゾウ', 'ワシ', 'ゴリラ'],
+    ['無人島に連れていくなら？', '犬', '猫', '馬', 'ゾウ', 'ゴリラ'],
+    ['生まれ変わるなら？', '犬', '猫', '鳥', 'イルカ', 'パンダ'],
+    ['話せるようになるなら？', '犬', '猫', '鳥', '魚', '虫'],
+    ['空想の生き物になるなら？', 'ドラゴン', 'ユニコーン', '人魚', '妖精', '巨人'],
+    ['能力を手に入れるなら？', '透明化', '飛行', '瞬間移動', '時間停止', '未来予知'],
+    ['使える魔法を選ぶなら？', '飛行', '回復', '変身', '瞬間移動', '物を出す'],
+    ['タイムマシンで行くなら？', '子どもの頃', '江戸時代', '恐竜時代', '100年後', '1000年後'],
+    ['住むなら？', '都会', '海辺', '山', '田舎', '海外'],
+    ['旅行に行くなら？', '北海道', '東京', '京都', '大阪', '沖縄'],
+    ['海外に行くなら？', '韓国', 'ハワイ', 'イタリア', 'フランス', 'オーストラリア'],
+    ['遊びに行くなら？', '遊園地', '水族館', '動物園', '温泉', 'ショッピングモール'],
+    ['見に行くなら？', '海', '山', '桜', '夜景', '星空'],
+    ['泊まるなら？', '高級ホテル', '温泉旅館', 'キャンプ', 'ログハウス', '古民家'],
+    ['移動するなら？', '車', '電車', '飛行機', '自転車', '徒歩'],
+    ['一生食べる主食にするなら？', '白米', 'パン', 'ラーメン', 'うどん', 'パスタ'],
+    ['ごちそうなら？', '寿司', '焼肉', 'うなぎ', '天ぷら', 'ステーキ'],
+    ['麺を食べるなら？', 'ラーメン', 'うどん', 'そば', 'パスタ', '焼きそば'],
+    ['甘いものなら？', 'ケーキ', 'アイス', 'プリン', 'チョコ', '和菓子'],
+    ['お菓子なら？', 'チョコ', 'ポテチ', 'せんべい', 'グミ', 'クッキー'],
+    ['果物なら？', 'いちご', '桃', 'ぶどう', 'みかん', 'スイカ'],
+    ['おにぎりの具なら？', '鮭', '梅', '昆布', 'ツナマヨ', '明太子'],
+    ['ラーメンなら？', '醤油', '味噌', '塩', '豚骨', '担々麺'],
+    ['カレーに乗せるなら？', 'カツ', 'チーズ', '卵', '唐揚げ', 'エビフライ'],
+    ['冬に食べるなら？', '鍋', 'おでん', 'ラーメン', 'シチュー', '焼き芋'],
+    ['夏に食べるなら？', 'アイス', 'かき氷', 'スイカ', 'そうめん', '冷やし中華'],
+    ['映画を観るなら？', 'アクション', 'コメディ', '恋愛', 'ホラー', 'アニメ'],
+    ['暇なときは？', 'ゲーム', '動画', '読書', '散歩', '昼寝'],
+    ['みんなで遊ぶなら？', 'ボウリング', 'カラオケ', 'ボドゲ', 'BBQ', 'スポーツ'],
+    ['得意になるなら？', '歌', '絵', '料理', 'ダンス', 'スポーツ'],
+    ['楽器をやるなら？', 'ギター', 'ピアノ', 'ドラム', 'バイオリン', 'サックス'],
+    ['有名人になるなら？', '俳優', '歌手', '芸人', 'スポーツ選手', 'YouTuber'],
+    ['YouTubeを始めるなら？', 'ゲーム', '料理', '旅行', '動物', '雑談'],
+    ['店を出すなら？', 'ラーメン屋', '喫茶店', 'パン屋', '居酒屋', 'ペットショップ'],
+    ['1億円当たったら？', '家', '車', '旅行', '趣味', '貯金'],
+    ['一生タダになるなら？', '家賃', '食費', '電気代', '交通費', '旅行代'],
+    ['ドラえもんの道具をもらうなら？', 'どこでもドア', 'タイムマシン', 'タケコプター', 'もしもボックス', 'スモールライト'],
+    ['昔話の主人公になるなら？', '桃太郎', '浦島太郎', '金太郎', '一寸法師', 'かぐや姫'],
+    ['RPGで選ぶなら？', '戦士', '魔法使い', '僧侶', '盗賊', '勇者'],
+    ['冒険の仲間にするなら？', '剣士', '魔法使い', '医者', '料理人', '犬'],
+    ['ゾンビから逃げるなら？', 'スーパー', '学校', '病院', '山', 'ホームセンター'],
+    ['宇宙人に会ったら？', '話す', '逃げる', '写真', '握手', '一緒にご飯'],
+    ['怪獣が現れたら？', '逃げる', '隠れる', '撮影', '助けに行く', 'ニュースを見る'],
+    ['ペットにするなら？', 'パンダ', 'ペンギン', 'カピバラ', 'アルパカ', 'コアラ'],
+    ['1日だけ飼うなら？', 'ゾウ', 'キリン', 'ライオン', 'パンダ', 'イルカ'],
+    ['職業体験するなら？', '宇宙飛行士', 'パイロット', '料理人', '飼育員', '探偵'],
+    ['専用の乗り物をもらうなら？', '高級車', 'キャンピングカー', '船', 'ヘリ', '馬'],
+    ['城を建てるなら？', '海辺', '山頂', '森', '砂漠', '空の上'],
+    ['ラスボスの部下にするなら？', 'ドラゴン', '忍者', 'ロボット', '魔法使い', 'ゴリラ'],
+    ['世界征服したら作るのは？', '巨大遊園地', '巨大温泉', '無料食堂', '動物王国', '昼寝専用施設']
+  ],
+
+  'フリー': [
+    '「バキッ！」何の音？',
+    '太陽は何色？',
+    '「たこ焼き一人前」といったら何個？',
+    '「ドン！」何の音？',
+    '「ふわふわ」と聞いて最初に思い浮かぶものは？',
+    '丸いものといえば？',
+    '赤い食べ物といえば？',
+    '夏の食べ物といえば？',
+    '冬の飲み物といえば？',
+    '「高い」と聞いて最初に思い浮かぶものは？',
+    'コンビニの商品といえば？',
+    '遠足のおやつといえば？',
+    'お祭りの食べ物といえば？',
+    '黄色いキャラクターといえば？',
+    '強そうな動物といえば？',
+    '頭が良さそうな動物といえば？',
+    'のんびりしてそうな動物といえば？',
+    '王様が飼っていそうな動物は？',
+    '無人島に1つ落ちていたら嬉しいものは？',
+    '宝箱に入っていてほしいものは？',
+    '宇宙人が最初に言いそうな言葉は？',
+    '魔法使いが持っていそうなものは？',
+    '「マ」から始まる食べ物は？',
+    '「ア」から始まる動物は？',
+    '3文字の食べ物といえば？',
+    '四角いものといえば？',
+    '世界で一番速そうなものは？',
+    '世界で一番硬そうなものは？',
+    '100円で買えるものといえば？',
+    '1万円あったら何を買う？',
+    '朝起きて最初にすることは？',
+    '夜寝る前にすることは？',
+    '冷蔵庫に入っていそうなものは？',
+    'カレーの具といえば？',
+    'ラーメンに乗っているものといえば？',
+    'おにぎりの具といえば？',
+    '春を感じるものといえば？',
+    '秋といえば何？',
+    '海にあるものといえば？',
+    '山にあるものといえば？',
+    '学校にあるものといえば？',
+    '公園にあるものといえば？',
+    '「怖い場所」と聞いて思い浮かぶ場所は？',
+    '1時間暇になったら何をする？',
+    '明日突然休みになったら何をする？',
+    '透明人間になったら最初に何をする？',
+    '100年後にも残っていそうなものは？',
+    '桃太郎が現代にいたら何の仕事をしてそう？',
+    'ゴリラに名前を付けるなら？',
+    '無人島にコンビニを1軒作るなら何店？'
+  ]
+};
+
+/* =========================================================================
+   ゲーム本体
+   ========================================================================= */
+
+// 出題順と配点
+const ORDER  = ['2択', '3択', '4択', '5択', 'フリー'];
+const POINTS = { '2択': 1, '3択': 2, '4択': 3, '5択': 4, 'フリー': 5 };
+const TOTAL_Q = ORDER.length;
+const CLEAR_POINT = 5;
+
+const $ = (id) => document.getElementById(id);
+
+let state = null;
+
+function normalize(entry) {
+  return Array.isArray(entry)
+    ? { text: entry[0], choices: entry.slice(1) }
+    : { text: entry, choices: [] };
+}
+
+function startGame() {
+  state = {
+    step: 0,           // 0〜4（何問目か）
+    score: 0,
+    used: {},          // 種別ごとに出題済みインデックスを記録（この5問の中だけ）
+    current: null
+  };
+  ORDER.forEach(t => state.used[t] = []);
+  showScreen('game');
+  nextQuestion();
+}
+
+// 同じ5問の中で未出題のものからランダムに1問選ぶ
+function pickQuestion(type) {
+  const pool = QUESTIONS[type];
+  const rest = pool.map((_, i) => i).filter(i => !state.used[type].includes(i));
+  if (rest.length === 0) return null;          // 在庫切れ（パスしすぎた場合のみ）
+  const idx = rest[Math.floor(Math.random() * rest.length)];
+  state.used[type].push(idx);
+  return { type: type, index: idx, ...normalize(pool[idx]) };
+}
+
+function nextQuestion() {
+  const type = ORDER[state.step];
+  state.current = pickQuestion(type);
+  render();
+}
+
+function render() {
+  const q = state.current;
+  const type = ORDER[state.step];
+  const pt = POINTS[type];
+
+  $('progress').textContent = (state.step + 1) + ' / ' + TOTAL_Q + '問';
+  $('score').textContent = '現在' + state.score + 'ポイント';
+  $('qtype').textContent = type;
+  $('qinfo').textContent = '第' + (state.step + 1) + '問 / 成功で' + pt + 'ポイント';
+  $('qtext').textContent = q.text;
+
+  const box = $('qchoices');
+  box.innerHTML = '';
+  q.choices.forEach(c => {
+    const el = document.createElement('span');
+    el.className = 'choice';
+    el.textContent = c;
+    box.appendChild(el);
+  });
+
+  $('judgeArea').classList.remove('hidden');
+  $('nextArea').classList.add('hidden');
+}
+
+function judge(kind) {
+  const type = ORDER[state.step];
+  const pt = POINTS[type];
+
+  // パス：問題数を消費せず、同じ難易度の別問題に差し替える
+  if (kind === 'pass') {
+    const replacement = pickQuestion(type);
+    if (replacement) {
+      state.current = replacement;
+      render();
+      return;
+    }
+    // その難易度を出しきった場合だけ、パスを1問としてカウントして次へ
+    showVerdict('pass', 'パス', 'この難易度は出しきりました');
+    return;
+  }
+
+  if (kind === 'ok') {
+    state.score += pt;
+    $('score').textContent = '現在' + state.score + 'ポイント';
+    showVerdict('ok', '全員一致！ +' + pt + 'ポイント', '現在' + state.score + 'ポイント！');
+  } else {
+    showVerdict('ng', '今回は一致せず！', 'なんでそれ選んだの？');
+  }
+}
+
+function showVerdict(kind, head, sub) {
+  const v = $('verdict');
+  v.className = 'verdict is-' + kind;
+  $('verdictHead').textContent = head;
+  $('verdictSub').textContent = sub;
+  $('judgeArea').classList.add('hidden');
+  $('nextArea').classList.remove('hidden');
+  $('nextBtn').textContent = (state.step + 1 >= TOTAL_Q) ? '結果を見る' : '次の問題へ';
+}
+
+function advance() {
+  state.step++;
+  if (state.step >= TOTAL_Q) {
+    showResult();
+  } else {
+    nextQuestion();
+  }
+}
+
+function showResult() {
+  const cleared = state.score >= CLEAR_POINT;
+  $('resultScore').innerHTML = state.score + '<span>ポイント！</span>';
+  $('resultTitle').textContent = cleared ? 'クリア！' : '惜しい！';
+  $('resultMsg').textContent = cleared
+    ? 'みんな、けっこう分かってる！'
+    : 'まだまだ知らないことがありそう！';
+  $('resultDetail').textContent = cleared
+    ? CLEAR_POINT + 'ポイント以上でクリアでした'
+    : 'あと' + (CLEAR_POINT - state.score) + 'ポイントでクリアでした';
+  showScreen('result');
+}
+
+function showScreen(name) {
+  ['home', 'game', 'result'].forEach(s => {
+    $(s).classList.toggle('hidden', s !== name);
+  });
+}
+
+// ---- イベント ----
+$('startBtn').addEventListener('click', startGame);
+$('homeBtn').addEventListener('click', () => showScreen('home'));
+$('backHomeBtn').addEventListener('click', () => showScreen('home'));
+$('nextBtn').addEventListener('click', advance);
+document.querySelectorAll('[data-judge]').forEach(btn => {
+  btn.addEventListener('click', () => judge(btn.dataset.judge));
+});
+</script>
+</body>
+</html>
