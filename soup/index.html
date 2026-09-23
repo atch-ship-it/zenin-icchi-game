@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#5b6ee1">
+<title>あなたのスープ ドライブ想定バージョン</title>
+<style>
+  :root{
+    --bg1:#eef0ff;
+    --bg2:#dde2fb;
+    --ink:#262a48;
+    --ink-sub:#6f7495;
+    --card:#ffffff;
+    --accent:#5b6ee1;
+    --accent-dark:#4152b8;
+    --count:#e2803c;
+    --pass:#8d8378;
+    --pass-dark:#6d645b;
+    --shadow:0 4px 0 rgba(0,0,0,.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    color:var(--ink);
+    background:linear-gradient(160deg,var(--bg1) 0%,var(--bg2) 100%);
+    overflow:hidden;touch-action:manipulation;-webkit-text-size-adjust:100%;
+  }
+  #app{
+    height:100vh;height:100dvh;display:flex;flex-direction:column;
+    padding:0 16px calc(14px + env(safe-area-inset-bottom)) 16px;
+    max-width:560px;margin:0 auto;
+  }
+  .screen{flex:1;display:flex;flex-direction:column;min-height:0}
+  .hidden{display:none !important}
+
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    width:100%;border:none;border-radius:16px;
+    font-family:inherit;font-weight:800;color:#fff;
+    cursor:pointer;box-shadow:var(--shadow);
+    transition:transform .06s ease, filter .06s ease;
+  }
+  .btn:active{transform:translateY(3px);box-shadow:none;filter:brightness(.95)}
+  .btn-start{min-height:84px;font-size:1.6rem;background:var(--accent);border-bottom:4px solid var(--accent-dark)}
+  .btn-next{min-height:76px;font-size:1.45rem;background:var(--accent);border-bottom:4px solid var(--accent-dark)}
+  .btn-pass{min-height:54px;font-size:1.1rem;background:var(--pass);border-bottom:4px solid var(--pass-dark)}
+  .btn-count{min-height:64px;font-size:1.2rem;background:var(--count);border-bottom:4px solid #b8622a}
+
+  /* ---------- スタート ---------- */
+  #home{justify-content:center;align-items:stretch;text-align:center;gap:18px;padding-bottom:10px}
+  .home-title{font-size:clamp(1.9rem,8.5vw,2.6rem);font-weight:900;line-height:1.3}
+  .home-title small{display:block;font-size:.42em;color:var(--accent);margin-bottom:8px;letter-spacing:.12em}
+  .home-lead{
+    background:var(--card);border-radius:18px;padding:16px 16px;
+    font-size:1rem;line-height:1.85;box-shadow:0 3px 12px rgba(0,0,0,.06);text-align:left;
+  }
+  .home-lead b{color:var(--accent)}
+  .home-note{font-size:.82rem;color:var(--ink-sub);line-height:1.7}
+
+  /* ---------- ヘッダー ---------- */
+  .bar{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 0 8px 0}
+  .home-btn{
+    flex:0 0 auto;width:38px;height:38px;border:none;border-radius:12px;
+    background:rgba(255,255,255,.85);color:var(--ink-sub);
+    font-size:1.1rem;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08);
+  }
+  .home-btn:active{transform:translateY(2px)}
+  .status{flex:1;display:flex;justify-content:flex-end;align-items:center;gap:12px;font-weight:800;font-size:1.05rem}
+  .mode-tag{background:var(--accent);color:#fff;border-radius:999px;padding:3px 12px;font-size:.85rem}
+
+  /* ---------- 問題 ---------- */
+  .qwrap{flex:1;display:flex;flex-direction:column;justify-content:center;gap:14px;min-height:0;overflow-y:auto;padding:4px 0}
+  .label{font-size:.85rem;font-weight:800;color:var(--ink-sub);letter-spacing:.08em;margin-bottom:6px}
+  .panel{background:var(--card);border-radius:20px;padding:22px 16px;text-align:center;box-shadow:0 3px 12px rgba(0,0,0,.06)}
+  .question{font-size:clamp(1.6rem,7.2vw,2.3rem);font-weight:900;line-height:1.45}
+  .counter{font-size:clamp(2.6rem,13vw,3.6rem);font-weight:900;color:var(--count);line-height:1}
+  .counter small{font-size:.4em;color:var(--ink-sub);margin-left:4px}
+  .counter.over{color:#c04434}
+  .hint{font-size:.9rem;color:var(--ink-sub);font-weight:700;line-height:1.6;margin-top:6px}
+  .actions{display:flex;flex-direction:column;gap:10px;padding-top:8px}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ===== スタート画面 ===== -->
+  <section id="home" class="screen">
+    <h1 class="home-title"><small>YOUR SOUP</small>あなたのスープ<br><span style="font-size:.55em;color:var(--ink-sub)">ドライブ想定バージョン</span></h1>
+    <p class="home-lead">
+      親はお題を読んで、頭の中で<b>答えを1つ決める</b>。<br>
+      みんなは<b>「はい／いいえ／どちらでもない」</b>で答えられる質問だけをして、親の答えを当てる。<br>
+      質問は<b>20回まで</b>。当たったら次の親に交代！
+    </p>
+    <button id="startBtn" class="btn btn-start">スタート</button>
+    <p class="home-note">お題がピンとこなければ「パス」で別のお題に<br>点数はなし。当たった／当たらなかったを楽しむだけ</p>
+  </section>
+
+  <!-- ===== 問題画面 ===== -->
+  <section id="game" class="screen hidden">
+    <div class="bar">
+      <button id="homeBtn" class="home-btn" aria-label="スタートへ戻る">⌂</button>
+      <div class="status">
+        <span class="mode-tag">親のお題</span>
+        <span id="progress"></span>
+      </div>
+    </div>
+
+    <div class="qwrap">
+      <div class="panel">
+        <div class="label">お題（読み上げる）</div>
+        <div class="question" id="question"></div>
+      </div>
+
+      <div class="panel">
+        <div class="label">質問した回数</div>
+        <div class="counter" id="counter">0<small>/ 20</small></div>
+        <div class="hint">質問するたびにタップして数える（任意）</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="countBtn" class="btn btn-count">質問した ＋1</button>
+      <button id="nextBtn" class="btn btn-next">次のお題（親を交代）</button>
+      <button id="passBtn" class="btn btn-pass">パス（別のお題にする）</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* =========================================================================
+   データ
+   -------------------------------------------------------------------------
+   QUESTIONS : お題の文字列
+   追加は配列に1行足すだけ。削除は行ごと消すだけ。
+   ========================================================================= */
+const QUESTIONS = [
+  // --- たとえ・生まれ変わり ---
+  '生まれ変わるなら何？',
+  '自分を漢字1文字で表すと？',
+  '自分を動物にたとえると？',
+  '自分を道具にたとえると？',
+  '自分を食べ物にたとえると？',
+
+  // --- 1つだけ ---
+  '無人島に1つだけ持っていくなら？',
+  '一生これしか食べられないなら？',
+  '部屋のドアをどこかに直結できるなら？',
+  '才能を1つプロ級にできるなら？',
+  '記憶を消してもう一度味わいたいものは？',
+  '10年間毎日1時間やり続けるなら？',
+  '今日中に100万円使い切るなら？',
+  '過去の歴史をひとつ見に行けるなら？',
+
+  // --- 捨てる・守る ---
+  '家が火事、1つだけ持ち出すなら？',
+  '一生手放せないものは？',
+  '人生から1つ消せるなら何を消す？',
+  '世界から1つ無くすなら？',
+  '自分から1つ引き算するなら？',
+
+  // --- 時間・人生 ---
+  '1日だけ他人になれるなら誰？',
+  '人生をやり直せるならいつから？',
+  '明日で世界が終わるなら今日何する？',
+  '子どもの頃の自分に何を渡す？',
+  '子どもの頃の夢は？',
+  '恥ずかしかった思い出は？',
+  '楽しかった思い出は？',
+
+  // --- 一言かけるなら ---
+  '100歳の自分に一言かけるなら？',
+  '小学生の自分に一言かけるなら？',
+  '中学生の自分に一言かけるなら？',
+  '高校生の自分に一言かけるなら？',
+  '20歳の自分に一言かけるなら？',
+  '昨日の自分に一言かけるなら？',
+  '明日の自分に一言かけるなら？',
+  '右隣の人に一言かけるなら？',
+  '左隣の人に一言かけるなら？',
+  '親に一言かけるなら？',
+  '初対面の人に必ず言う一言は？',
+
+  // --- 価値観直球 ---
+  '一番もったいないと思うことは？',
+  'お金で買えない一番のものは？',
+  '幸せを一言で言うと？',
+  '許せないことを一つ挙げると？',
+  '自分の「ご褒美」といえば？'
+];
+
+/* =========================================================================
+   ゲーム本体
+   ========================================================================= */
+const MAX_Q = 20;
+const $ = (id) => document.getElementById(id);
+
+let state = null;
+
+function startGame() {
+  state = { used: [], current: null, round: 0, count: 0 };
+  showScreen('game');
+  nextQuestion();
+}
+
+// 未出題のお題からランダムに1つ。出しきったら一巡リセット
+function pickQuestion() {
+  let rest = QUESTIONS.map((_, i) => i).filter(i => !state.used.includes(i));
+  if (rest.length === 0) {
+    state.used = [];
+    rest = QUESTIONS.map((_, i) => i).filter(i => i !== state.current);
+  }
+  const idx = rest[Math.floor(Math.random() * rest.length)];
+  state.used.push(idx);
+  return idx;
+}
+
+function nextQuestion() {
+  state.current = pickQuestion();
+  state.round++;
+  state.count = 0;
+  render();
+}
+
+// パス：ラウンド数を消費せず別のお題に差し替える
+function pass() {
+  state.current = pickQuestion();
+  state.count = 0;
+  render();
+}
+
+function addCount() {
+  state.count++;
+  render();
+}
+
+function render() {
+  $('question').textContent = QUESTIONS[state.current];
+  $('progress').textContent = state.round + '人目';
+  $('counter').innerHTML = state.count + '<small>/ ' + MAX_Q + '</small>';
+  $('counter').classList.toggle('over', state.count >= MAX_Q);
+}
+
+function showScreen(name) {
+  ['home', 'game'].forEach(s => $(s).classList.toggle('hidden', s !== name));
+}
+
+// ---- イベント ----
+$('startBtn').addEventListener('click', startGame);
+$('nextBtn').addEventListener('click', nextQuestion);
+$('passBtn').addEventListener('click', pass);
+$('countBtn').addEventListener('click', addCount);
+$('homeBtn').addEventListener('click', () => showScreen('home'));
+</script>
+</body>
+</html>
