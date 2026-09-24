@@ -63,7 +63,7 @@
   .room label{display:block;font-size:.85rem;font-weight:800;color:var(--ink-sub);letter-spacing:.08em;margin-bottom:8px}
   .room input{
     width:100%;border:3px solid var(--accent);border-radius:14px;padding:10px;
-    font-family:inherit;font-size:2.2rem;font-weight:900;text-align:center;letter-spacing:.3em;
+    font-family:inherit;font-size:2.2rem;font-weight:900;text-align:center;letter-spacing:.4em;
     color:var(--ink);text-transform:uppercase;outline:none;
   }
   .room .hint{font-size:.85rem;color:var(--ink-sub);margin-top:8px;line-height:1.6}
@@ -111,7 +111,7 @@
     </p>
     <div class="room">
       <label>部屋コード（全員同じにする）</label>
-      <input id="roomInput" maxlength="4" autocomplete="off" autocapitalize="characters" inputmode="latin">
+      <input id="roomInput" maxlength="2" autocomplete="off" autocapitalize="characters" inputmode="latin">
       <div class="hint">最初の人はそのまま入る。他の人はこのコードを打って入る</div>
     </div>
     <button id="startBtn" class="btn btn-start">この部屋に入る</button>
@@ -224,7 +224,7 @@ let es = null;
 
 function randomCode() {
   let s = '';
-  for (let i = 0; i < 4; i++) s += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+  for (let i = 0; i < 2; i++) s += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
   return s;
 }
 
