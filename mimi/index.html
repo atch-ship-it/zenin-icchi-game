@@ -96,6 +96,8 @@
   .actions{display:flex;flex-direction:column;gap:10px;padding-top:8px}
   .sync-note{text-align:center;font-size:.8rem;color:var(--ink-sub);font-weight:700}
   .yuma{height:92px;width:auto;align-self:center;margin:-2px auto 0;filter:drop-shadow(0 3px 4px rgba(0,0,0,.15));pointer-events:none}
+  .yuma-mini{height:40px;width:auto;flex:0 0 auto;filter:drop-shadow(0 2px 2px rgba(0,0,0,.15));pointer-events:none}
+  .yuma-mini.end{height:72px;align-self:center}
 </style>
 </head>
 <body>
@@ -123,6 +125,7 @@
   <section id="game" class="screen hidden">
     <div class="bar">
       <button id="homeBtn" class="home-btn" aria-label="スタートへ戻る">⌂</button>
+      <img class="yuma-mini" alt="">
       <div class="status">
         <span class="dot" id="dot"></span>
         <span id="progress"></span>
@@ -354,6 +357,9 @@ $('roomInput').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') $('
 $('nextBtn').addEventListener('click', publishNext);
 $('passBtn').addEventListener('click', publishPass);
 $('homeBtn').addEventListener('click', leaveRoom);
+
+// 画面上部のミニユウマ（スタート画面の画像を使い回す）
+document.querySelectorAll('.yuma-mini').forEach(i => { i.src = document.querySelector('.yuma').src; });
 </script>
 </body>
 </html>

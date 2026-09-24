@@ -91,6 +91,8 @@
   .end-title{font-size:clamp(1.8rem,8vw,2.4rem);font-weight:900;line-height:1.4}
   .end-msg{background:var(--card);border-radius:18px;padding:18px 16px;font-size:1.05rem;line-height:1.8;font-weight:700;box-shadow:0 3px 12px rgba(0,0,0,.06)}
   .yuma{height:92px;width:auto;align-self:center;margin:-2px auto 0;filter:drop-shadow(0 3px 4px rgba(0,0,0,.15));pointer-events:none}
+  .yuma-mini{height:40px;width:auto;flex:0 0 auto;filter:drop-shadow(0 2px 2px rgba(0,0,0,.15));pointer-events:none}
+  .yuma-mini.end{height:72px;align-self:center}
 </style>
 </head>
 <body>
@@ -114,6 +116,7 @@
   <section id="game" class="screen hidden">
     <div class="bar">
       <button id="homeBtn" class="home-btn" aria-label="モード選択へ戻る">⌂</button>
+      <img class="yuma-mini" alt="">
       <div class="status">
         <span class="mode-tag" id="modeTag">初級</span>
         <span id="progress">1 / 5問</span>
@@ -150,6 +153,7 @@
 
   <!-- ===== 終了画面 ===== -->
   <section id="end" class="screen hidden">
+    <img class="yuma-mini end" alt="">
     <div class="end-title">5問終了！<br>次の親に交代！</div>
     <p class="end-msg">正解した数は<br>各自で数えておいてください</p>
     <button id="againBtn" class="btn btn-next">次の親スタート</button>
@@ -534,6 +538,9 @@ $('passBtn').addEventListener('click', pass);
 $('homeBtn').addEventListener('click', () => showScreen('home'));
 $('againBtn').addEventListener('click', () => startGame(state.mode));
 $('backModeBtn').addEventListener('click', () => showScreen('home'));
+
+// 画面上部のミニユウマ（スタート画面の画像を使い回す）
+document.querySelectorAll('.yuma-mini').forEach(i => { i.src = document.querySelector('.yuma').src; });
 </script>
 </body>
 </html>
