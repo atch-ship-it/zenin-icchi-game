@@ -88,6 +88,7 @@
   .panel{background:var(--card);border-radius:20px;padding:20px 16px;text-align:center;box-shadow:0 3px 12px rgba(0,0,0,.06)}
   .cat{display:inline-block;background:var(--accent);color:#fff;border-radius:999px;padding:3px 12px;font-size:.85rem;font-weight:800;margin-bottom:10px}
   .cat.d{background:#7b5ea7}
+  .cat.practice{background:#e2803c}
   .question{font-size:clamp(1.45rem,6.4vw,2rem);font-weight:900;line-height:1.45}
   .panel.ex-panel{border:3px dashed var(--ex);background:#f3f8fd}
   .examples{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
@@ -203,6 +204,9 @@
    カテゴリ A=音・文字（例2つ） B/C=盲点（例3つ） D=アナタ系（例なし）
    追加は配列に1行足すだけ。削除は行ごと消すだけ。
    ========================================================================= */
+// 練習問題（部屋に最初に入ったとき必ずこれを出す。n=0 が練習）
+const PRACTICE_TEXT = 'のばし棒が入っている言葉';
+
 const CAT_NAME = { A: '音・文字', B: '日常の盲点', C: '日常の盲点', D: 'アナタ系' };
 
 const QUESTIONS = [
@@ -276,7 +280,7 @@ function setDot(cls, note) {
 }
 
 async function joinRoom(code) {
-  state = { room: code, q: null, n: 0, t: 0, used: [] };
+  state = { room: code, q: null, n: 0, t: 0, used: [practiceIndex()] };
   $('roomTag').textContent = code;
   showScreen('game');
   setDot('', '接続中…');
@@ -303,8 +307,8 @@ async function joinRoom(code) {
   if (latest) {
     apply(latest);
   } else {
-    // 部屋に誰もいなければ最初のお題を出す
-    publishNext();
+    // 部屋に誰もいなければ練習問題から始める
+    publish({ q: practiceIndex(), n: 0, t: Date.now() });
   }
 }
 
@@ -351,16 +355,25 @@ function publishNext() {
 }
 
 function publishPass() {
+  if (state.n === 0) { publishNext(); return; }  // 練習中のパスは1問目へ
   publish({ q: pickQuestion(), n: state.n, t: Date.now() });
+}
+
+function practiceIndex() {
+  return QUESTIONS.findIndex(e => e[1] === PRACTICE_TEXT);
 }
 
 function render() {
   const e = QUESTIONS[state.q];
   const isD = e[0] === 'D';
-  $('cat').textContent = CAT_NAME[e[0]];
+  const practice = state.n === 0;
+  $('cat').textContent = practice ? '練習問題' : CAT_NAME[e[0]];
+  $('cat').classList.toggle('practice', practice);
   $('cat').classList.toggle('d', isD);
   $('question').textContent = e[1];
-  $('progress').textContent = state.n + '問目';
+  $('progress').textContent = practice ? '練習' : state.n + '問目';
+  $('nextBtn').textContent = practice ? '1問目へ（全員に反映）' : '次のお題（全員に反映）';
+  $('passBtn').classList.toggle('hidden', practice);
   $('exPanel').classList.toggle('hidden', isD);
   $('selfPanel').classList.toggle('hidden', !isD);
   $('examples').innerHTML = e[2].map(x => '<span class="ex">' + x + '</span>').join('');
